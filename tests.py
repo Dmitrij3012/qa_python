@@ -1,24 +1,182 @@
-from main import BooksCollector
+import pytest
 
-# класс TestBooksCollector объединяет набор тестов, которыми мы покрываем наше приложение BooksCollector
-# обязательно указывать префикс Test
+
 class TestBooksCollector:
 
-    # пример теста:
-    # обязательно указывать префикс test_
-    # дальше идет название метода, который тестируем add_new_book_
-    # затем, что тестируем add_two_books - добавление двух книг
-    def test_add_new_book_add_two_books(self):
-        # создаем экземпляр (объект) класса BooksCollector
-        collector = BooksCollector()
+    @pytest.mark.parametrize(
+        'name',
+        [
+            'Г',
+            'Го',
+            'Гордость и предубеждение',
+            'Что делать, если ваш кот хочет вас убить'
+        ]
+    )
+    def test_add_new_book_from_1_to_40_symbols_positive(self, collector, name):
+        collector.add_new_book(name)
 
-        # добавляем две книги
-        collector.add_new_book('Гордость и предубеждение и зомби')
-        collector.add_new_book('Что делать, если ваш кот хочет вас убить')
+        assert name in collector.books_genre
 
-        # проверяем, что добавилось именно две
-        # словарь books_rating, который нам возвращает метод get_books_rating, имеет длину 2
-        assert len(collector.get_books_rating()) == 2
+    @pytest.mark.parametrize(
+        'name',
+        [
+            'Что делать, если ваш кот хочет вас убитьь',
+            'Что делать, если ваш кот хочет вас убитькот хочет вас убить'
+        ]
+    )
+    def test_add_new_book_over_40_symbols_negative(self, collector, name):
+        collector.add_new_book(name)
 
-    # напиши свои тесты ниже
-    # чтобы тесты были независимыми в каждом из них создавай отдельный экземпляр класса BooksCollector()
+        assert name not in collector.get_books_genre()
+
+    def test_add_new_book_re_adding_negative(self, collector):
+        name = 'Гордость и предубеждение'
+
+        collector.add_new_book(name)
+        collector.add_new_book(name)
+        collector.add_new_book(name)
+
+        assert len(collector.get_books_genre()) == 1
+
+    def test_add_new_book_with_empty_line_negative(self, collector):
+        name = ''
+
+        collector.add_new_book(name)
+
+        assert name not in collector.books_genre
+
+    def test_set_book_genre_positive(self, collector):
+        name = 'Гордость и предубеждение и зомби'
+
+        collector.add_new_book(name)
+        collector.set_book_genre(name, collector.genre[1])
+
+        assert collector.get_book_genre(name) == 'Ужасы'
+
+    def test_get_book_genre_without_genre_positive(self, collector):
+        name = 'Война и мир'
+
+        collector.add_new_book(name)
+
+        assert collector.get_book_genre(name) == ''
+
+    def test_get_book_genre_with_genre_positive(self, collector):
+        name = 'Гордость и предубеждение и зомби'
+
+        collector.add_new_book(name)
+        collector.set_book_genre(name, collector.genre[1])
+
+        assert collector.get_book_genre(name) == 'Ужасы'
+
+    @pytest.mark.parametrize(
+        'name,genre,expected_result',
+        [
+            ['Гордость и предубеждение и зомби', 1, 'Гордость и предубеждение и зомби'],
+            ['Человек-амфибия', 0, 'Человек-амфибия'],
+            ['Котёнок по имени Гав', 3, 'Котёнок по имени Гав']
+        ]
+    )
+    def test_get_books_with_specific_genre_positive(self, collector, name, genre, expected_result):
+        collector.add_new_book(name)
+        collector.set_book_genre(name, collector.genre[genre])
+
+        assert collector.get_books_with_specific_genre(collector.genre[genre]) == [expected_result]
+
+    def test_get_books_genre_without_genre_positive(self, collector):
+        name = 'Гордость и предубеждение и зомби'
+        expected_dict = {'Гордость и предубеждение и зомби': ''}
+
+        collector.add_new_book(name)
+
+        assert collector.get_books_genre() == expected_dict
+
+    @pytest.mark.parametrize(
+        'name,genre,expected_dict',
+        [
+            ['Что делать, если ваш кот хочет вас убить', 1, {'Что делать, если ваш кот хочет вас убить': 'Ужасы'}],
+            ['Человек-амфибия', 0, {'Человек-амфибия': 'Фантастика'}],
+            ['Котёнок по имени Гав', 3, {'Котёнок по имени Гав': 'Мультфильмы'}]
+        ]
+    )
+    def test_get_books_genre_positive(self, collector, name, genre, expected_dict):
+        collector.add_new_book(name)
+        collector.set_book_genre(name, collector.genre[genre])
+
+        assert collector.get_books_genre() == expected_dict
+
+    @pytest.mark.parametrize(
+        'name,genre',
+        [
+            ['Человек-амфибия', 0],
+            ['Котёнок по имени Гав', 3]
+        ]
+    )
+    def test_get_books_for_children_positive(self, collector, name, genre):
+        collector.add_new_book(name)
+        collector.set_book_genre(name, collector.genre[genre])
+
+        assert name in collector.get_books_for_children()
+
+    def test_get_books_for_children_negative(self, collector):
+        name = 'Гордость и предубеждение и зомби'
+
+        collector.add_new_book(name)
+        collector.set_book_genre(name, collector.genre[1])
+
+        assert name not in collector.get_books_for_children()
+
+    def test_add_book_in_favorites_positive(self, collector):
+        name = 'Человек-амфибия'
+
+        collector.add_new_book(name)
+        collector.add_book_in_favorites(name)
+
+        assert name in collector.get_list_of_favorites_books()
+
+    def test_add_book_in_favorites_non_existent_book_negative(self, collector):
+        name = 'Человек-амфибия'
+
+        collector.add_book_in_favorites(name)
+
+        assert name not in collector.get_list_of_favorites_books()
+
+    def test_add_book_in_favorites_re_adding_negative(self, collector):
+        name = 'Человек-амфибия'
+
+        collector.add_new_book(name)
+        collector.add_book_in_favorites(name)
+        collector.add_book_in_favorites(name)
+        collector.add_book_in_favorites(name)
+
+        assert len(collector.get_list_of_favorites_books()) == 1
+
+    def test_delete_book_from_favorites_positive(self, collector):
+        name = 'Котёнок по имени Гав'
+
+        collector.add_new_book(name)
+        collector.add_book_in_favorites(name)
+        collector.delete_book_from_favorites(name)
+
+        assert name not in collector.favorites
+
+    def test_delete_book_from_favorites_negative(self, collector):
+        name = 'Котёнок по имени Гав'
+
+        collector.add_new_book(name)
+        collector.delete_book_from_favorites(name)
+
+        assert name not in collector.favorites
+
+    @pytest.mark.parametrize(
+        'name',
+        [
+            'Гордость и предубеждение и зомби',
+            'Человек-амфибия',
+            'Котёнок по имени Гав',
+        ]
+    )
+    def test_get_list_of_favorites_books_positive(self,  collector, name):
+        collector.add_new_book(name)
+        collector.add_book_in_favorites(name)
+
+        assert name in collector.get_list_of_favorites_books()
